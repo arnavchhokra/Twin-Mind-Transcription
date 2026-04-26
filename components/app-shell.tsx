@@ -260,7 +260,9 @@ export function AppShell() {
         await transcribeChunk(event.data);
       };
       recorder.onstart = () => {
-        setStatusMessage("Listening live. Transcript will append every 30 seconds.");
+        setStatusMessage(
+          `Listening live. Transcript will append every ${settingsRef.current.transcriptChunkSeconds} seconds.`,
+        );
       };
       recorder.onstop = () => {
         setRecorderState("idle");

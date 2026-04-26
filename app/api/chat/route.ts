@@ -23,6 +23,7 @@ export async function POST(request: Request) {
       apiKey: body.apiKey,
       systemPrompt: body.prompt,
       messages: [
+        ...body.conversation,
         {
           role: "user",
           content: JSON.stringify(
@@ -42,7 +43,6 @@ export async function POST(request: Request) {
             2,
           ),
         },
-        ...body.conversation,
       ],
     });
 
