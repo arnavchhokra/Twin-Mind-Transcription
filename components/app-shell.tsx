@@ -202,9 +202,11 @@ export function AppShell() {
           startedAt,
         };
 
+        const nextTranscript = [...transcriptRef.current, entry];
+        transcriptRef.current = nextTranscript;
         setTranscript((current) => [...current, entry]);
         setStatusMessage("Transcript updated.");
-        await generateSuggestions("auto");
+        await generateSuggestions("auto", nextTranscript);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Transcription failed.";
         setStatusMessage(message);
@@ -245,7 +247,7 @@ export function AppShell() {
       };
       recorder.onstop = () => {
         setRecorderState("idle");
-        setStatusMessage("Mic stopped.");
+        setStatusMessage("Mic stopped. Finalizing transcript and suggestions...");
       };
 
       recorder.start(settings.transcriptChunkSeconds * 1000);
@@ -265,6 +267,7 @@ export function AppShell() {
     }
 
     setRecorderState("stopping");
+    setStatusMessage("Stopping mic and generating final suggestions...");
     mediaRecorderRef.current.stop();
     streamRef.current?.getTracks().forEach((track) => track.stop());
     mediaRecorderRef.current = null;
@@ -282,18 +285,20 @@ export function AppShell() {
     });
   }
 
-  async function generateSuggestions(trigger: "auto" | "manual") {
+  async function generateSuggestions(
+    trigger: "auto" | "manual",
+    transcriptEntries: TranscriptEntry[] = transcriptRef.current,
+  ) {
     if (!settingsRef.current.groqApiKey.trim()) {
       return;
     }
 
-    const currentTranscript = transcriptRef.current;
-    if (!currentTranscript.length) {
+    if (!transcriptEntries.length) {
       return;
     }
 
     const recentTranscript = buildRecentTranscript(
-      currentTranscript,
+      transcriptEntries,
       settingsRef.current.suggestionContextChars,
     );
 
