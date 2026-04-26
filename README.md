@@ -121,8 +121,3 @@ lib/
   types.ts
   server/groq.ts
 ```
-
-## Notes
-
-- I verified the current public TwinMind surfaces via the marketing/download pages while building against the provided three-column interaction model. The current public download flow points to TwinMind mobile plus Chrome extension rather than a standalone desktop installer.
-- A public deployment URL is not included in this repo because deployment credentials are environment-specific.
