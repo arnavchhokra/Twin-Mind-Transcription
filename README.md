@@ -21,7 +21,7 @@ The app is built with Next.js App Router and serverless API routes, using Groq f
 - Keeps older suggestion batches visible below the newest one
 - Lets the user click a suggestion to open a deeper answer in chat
 - Supports direct typed chat questions in the same session
-- Persists the session locally in `localStorage`
+- Keeps the session in memory for the current tab
 - Exports transcript, suggestion batches, chat history, and timestamps as JSON
 
 ## Local setup
@@ -86,7 +86,7 @@ The freeform chat prompt reuses the same meeting-copilot voice, but allows the u
 ## Important tradeoffs
 
 - Audio chunks are appended in browser-sized intervals, not word-by-word streaming. This matches the assignment requirement and keeps the implementation much simpler.
-- The app stores everything locally for the current browser only. There is no login or backend persistence.
+- The app keeps everything in memory for the current tab only. There is no login or backend persistence across reloads.
 - The API key lives in local browser storage because the user is expected to paste their own key per the assignment.
 - The transcription route currently forces `language=en` for more stable meeting output. If multilingual meetings matter, that should become a setting.
 
