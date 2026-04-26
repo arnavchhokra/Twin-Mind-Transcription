@@ -30,6 +30,22 @@ type SessionBundle = {
 const SETTINGS_KEY = "twinmind.settings.v1";
 const SESSION_KEY = "twinmind.session.v1";
 
+function getBrowserStorage(): Storage | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const storage = window.localStorage;
+    return typeof storage?.getItem === "function" &&
+      typeof storage?.setItem === "function"
+      ? storage
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 function uid(prefix: string) {
   return `${prefix}-${crypto.randomUUID()}`;
 }
@@ -102,24 +118,42 @@ export function AppShell() {
   const transcriptionQueueRef = useRef(Promise.resolve());
 
   useEffect(() => {
-    const storedSettings = window.localStorage.getItem(SETTINGS_KEY);
-    const storedSession = window.localStorage.getItem(SESSION_KEY);
-
-    if (storedSettings) {
-      setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(storedSettings) });
+    const storage = getBrowserStorage();
+    if (!storage) {
+      return;
     }
 
-    if (storedSession) {
-      const parsed = JSON.parse(storedSession) as Partial<SessionBundle>;
-      setTranscript(parsed.transcript ?? []);
-      setSuggestionBatches(parsed.suggestionBatches ?? []);
-      setChatHistory(parsed.chatHistory ?? []);
+    try {
+      const storedSettings = storage.getItem(SETTINGS_KEY);
+      const storedSession = storage.getItem(SESSION_KEY);
+
+      if (storedSettings) {
+        setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(storedSettings) });
+      }
+
+      if (storedSession) {
+        const parsed = JSON.parse(storedSession) as Partial<SessionBundle>;
+        setTranscript(parsed.transcript ?? []);
+        setSuggestionBatches(parsed.suggestionBatches ?? []);
+        setChatHistory(parsed.chatHistory ?? []);
+      }
+    } catch (e) {
+      console.error("Failed to load from localStorage", e);
     }
   }, []);
 
   useEffect(() => {
     settingsRef.current = settings;
-    window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    const storage = getBrowserStorage();
+    if (!storage) {
+      return;
+    }
+
+    try {
+      storage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    } catch (e) {
+      console.error("Failed to save settings to localStorage", e);
+    }
   }, [settings]);
 
   useEffect(() => {
@@ -142,7 +176,16 @@ export function AppShell() {
       },
     };
 
-    window.localStorage.setItem(SESSION_KEY, JSON.stringify(serializable));
+    const storage = getBrowserStorage();
+    if (!storage) {
+      return;
+    }
+
+    try {
+      storage.setItem(SESSION_KEY, JSON.stringify(serializable));
+    } catch (e) {
+      console.error("Failed to save session to localStorage", e);
+    }
   }, [chatHistory, suggestionBatches, transcript]);
 
   useEffect(() => {
@@ -462,9 +505,9 @@ export function AppShell() {
         current.map((entry) =>
           entry.id === assistantId
             ? {
-                ...entry,
-                content: `Sorry, I couldn't complete that answer.\n\n${message}`,
-              }
+              ...entry,
+              content: `Sorry, I couldn't complete that answer.\n\n${message}`,
+            }
             : entry,
         ),
       );
@@ -596,9 +639,8 @@ export function AppShell() {
                     {batch.suggestions.map((suggestion) => (
                       <button
                         key={suggestion.id}
-                        className={`suggestion-card ${
-                          activeSuggestionId === suggestion.id ? "suggestion-active" : ""
-                        }`}
+                        className={`suggestion-card ${activeSuggestionId === suggestion.id ? "suggestion-active" : ""
+                          }`}
                         onClick={() => streamAssistantReply(suggestion.title, "suggestion-click", suggestion)}
                       >
                         <div className="suggestion-meta">
@@ -631,9 +673,8 @@ export function AppShell() {
               chatHistory.map((message) => (
                 <article
                   key={message.id}
-                  className={`chat-message ${
-                    message.role === "assistant" ? "assistant-message" : "user-message"
-                  }`}
+                  className={`chat-message ${message.role === "assistant" ? "assistant-message" : "user-message"
+                    }`}
                 >
                   <div className="chat-meta">
                     <span>{message.role === "assistant" ? "Assistant" : "You"}</span>
